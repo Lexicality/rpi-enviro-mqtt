@@ -16,22 +16,12 @@ import ST7735
 from bme280 import BME280
 from enviroplus import gas
 from fonts.ttf import RobotoMedium as UserFont
+from ltr559 import LTR559
 from PIL import Image, ImageDraw, ImageFont
 from pms5003 import PMS5003, ReadTimeoutError, SerialTimeoutError
+from smbus2 import SMBus
 
-try:
-    # Transitional fix for breaking change in LTR559
-    from ltr559 import LTR559
-
-    ltr559 = LTR559()
-except ImportError:
-    import ltr559
-
-
-try:
-    from smbus2 import SMBus
-except ImportError:
-    from smbus import SMBus
+ltr559 = LTR559()
 
 
 DEFAULT_MQTT_BROKER_IP = "localhost"
