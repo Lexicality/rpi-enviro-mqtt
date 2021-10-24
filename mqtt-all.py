@@ -1,16 +1,23 @@
+#!/usr/bin/env python3
 """
 Run mqtt broker on localhost: sudo apt-get install mosquitto mosquitto-clients
 
 Example run: python3 mqtt-all.py --broker 192.168.1.164 --topic enviro
 """
-#!/usr/bin/env python3
 
 import argparse
-import ST7735
+import json
 import time
+from subprocess import PIPE, Popen, check_output
+
+import paho.mqtt.client as mqtt
+import paho.mqtt.publish as publish
+import ST7735
 from bme280 import BME280
-from pms5003 import PMS5003, ReadTimeoutError, SerialTimeoutError
 from enviroplus import gas
+from fonts.ttf import RobotoMedium as UserFont
+from PIL import Image, ImageDraw, ImageFont
+from pms5003 import PMS5003, ReadTimeoutError, SerialTimeoutError
 
 try:
     # Transitional fix for breaking change in LTR559
@@ -20,13 +27,6 @@ try:
 except ImportError:
     import ltr559
 
-from subprocess import PIPE, Popen, check_output
-from PIL import Image, ImageDraw, ImageFont
-from fonts.ttf import RobotoMedium as UserFont
-import json
-
-import paho.mqtt.client as mqtt
-import paho.mqtt.publish as publish
 
 try:
     from smbus2 import SMBus
@@ -38,6 +38,7 @@ DEFAULT_MQTT_BROKER_IP = "localhost"
 DEFAULT_MQTT_BROKER_PORT = 1883
 DEFAULT_MQTT_TOPIC = "enviroplus"
 DEFAULT_READ_INTERVAL = 5
+
 
 # mqtt callbacks
 def on_connect(client, userdata, flags, rc):
@@ -91,9 +92,7 @@ def read_pms5003(pms5003):
 
 # Get CPU temperature to use for compensation
 def get_cpu_temperature():
-    process = Popen(
-        ["vcgencmd", "measure_temp"], stdout=PIPE, universal_newlines=True
-    )
+    process = Popen(["vcgencmd", "measure_temp"], stdout=PIPE, universal_newlines=True)
     output, _error = process.communicate()
     return float(output[output.index("=") + 1 : output.rindex("'")])
 
@@ -141,9 +140,7 @@ def display_status(disp, mqtt_broker):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Publish enviroplus values over mqtt"
-    )
+    parser = argparse.ArgumentParser(description="Publish enviroplus values over mqtt")
     parser.add_argument(
         "--broker",
         default=DEFAULT_MQTT_BROKER_IP,
