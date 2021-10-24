@@ -24,11 +24,8 @@ import asyncio
 import json
 import signal
 
-import ST7735
 from bme280 import BME280
-from fonts.ttf import RobotoMedium as UserFont
 from ltr559 import LTR559
-from PIL import Image, ImageDraw, ImageFont
 from pms5003 import PMS5003, SerialTimeoutError
 from smbus2 import SMBus
 
@@ -46,32 +43,6 @@ DEFAULT_MQTT_BROKER_IP = "localhost"
 DEFAULT_MQTT_BROKER_PORT = 1883
 DEFAULT_MQTT_TOPIC = "enviroplus"
 DEFAULT_READ_INTERVAL = 5
-
-
-# Display Raspberry Pi serial and Wi-Fi status on LCD
-def display_status(disp, mqtt_broker):
-    # Width and height to calculate text position
-    WIDTH = disp.width
-    HEIGHT = disp.height
-    # Text settings
-    font_size = 12
-    font = ImageFont.truetype(UserFont, font_size)
-
-    wifi_status = "connected" if check_wifi() else "disconnected"
-    text_colour = (255, 255, 255)
-    back_colour = (0, 170, 170) if check_wifi() else (85, 15, 15)
-    device_serial_number = get_serial_number()
-    message = "{}\nWi-Fi: {}\nmqtt-broker: {}".format(
-        device_serial_number, wifi_status, mqtt_broker
-    )
-    img = Image.new("RGB", (WIDTH, HEIGHT), color=(0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    size_x, size_y = draw.textsize(message, font)
-    x = (WIDTH - size_x) / 2
-    y = (HEIGHT / 2) - (size_y / 2)
-    draw.rectangle((0, 0, 160, 80), back_colour)
-    draw.text((x, y), message, font=font, fill=text_colour)
-    disp.display(img)
 
 
 def _on_signal(STOP: asyncio.Event, *args):
@@ -137,12 +108,6 @@ def main():
     )
 
     # Create LCD instance
-    disp = ST7735.ST7735(
-        port=0, cs=1, dc=9, backlight=12, rotation=270, spi_speed_hz=10000000
-    )
-
-    # Initialize display
-    disp.begin()
 
     # Display Raspberry Pi serial and Wi-Fi status
     print("RPi serial: {}".format(device_serial_number))
@@ -161,14 +126,6 @@ async def _main_loop(mqtt_conf: MQTTConf, interval: int, STOP: asyncio.Event) ->
 
     # Create BME280 instance
     bme280 = BME280(i2c_dev=bus)
-
-    # Create LCD instance
-    disp = ST7735.ST7735(
-        port=0, cs=1, dc=9, backlight=12, rotation=270, spi_speed_hz=10000000
-    )
-
-    # Initialize display
-    disp.begin()
 
     # Try to create PMS5003 instance
     HAS_PMS = False
@@ -191,7 +148,6 @@ async def _main_loop(mqtt_conf: MQTTConf, interval: int, STOP: asyncio.Event) ->
                 values.update(pms_values)
             print(values)
             mqtt_client.publish(mqtt_conf["topic_prefix"], json.dumps(values))
-            # display_status(disp, args.broker)
             await asyncio.sleep(interval)
             if STOP.is_set():
                 break
