@@ -20,10 +20,10 @@ Example run: python3 mqtt-all.py --broker 192.168.1.164 --topic enviro
 """
 
 import argparse
+import asyncio
 import json
-import time
+import signal
 
-import paho.mqtt.client as mqtt
 import ST7735
 from bme280 import BME280
 from fonts.ttf import RobotoMedium as UserFont
@@ -40,23 +40,12 @@ from .data import (
     read_ltr559,
     read_pms5003,
 )
+from .mqtt import MQTTConf, get_mqtt_client, setup_mqtt_config
 
 DEFAULT_MQTT_BROKER_IP = "localhost"
 DEFAULT_MQTT_BROKER_PORT = 1883
 DEFAULT_MQTT_TOPIC = "enviroplus"
 DEFAULT_READ_INTERVAL = 5
-
-
-# mqtt callbacks
-def on_connect(client, userdata, flags, rc):
-    if rc == 0:
-        print("connected OK")
-    else:
-        print("Bad connection Returned code=", rc)
-
-
-def on_publish(client, userdata, mid):
-    print("mid: " + str(mid))
 
 
 # Display Raspberry Pi serial and Wi-Fi status on LCD
@@ -85,6 +74,10 @@ def display_status(disp, mqtt_broker):
     disp.display(img)
 
 
+def _on_signal(STOP: asyncio.Event, *args):
+    STOP.set()
+
+
 def main():
     parser = argparse.ArgumentParser(description="Publish enviroplus values over mqtt")
     parser.add_argument(
@@ -110,6 +103,13 @@ def main():
     )
     args = parser.parse_args()
 
+    STOP = asyncio.Event()
+
+    loop = asyncio.get_event_loop()
+
+    loop.add_signal_handler(signal.SIGINT, _on_signal, STOP)
+    loop.add_signal_handler(signal.SIGTERM, _on_signal, STOP)
+
     # Raspberry Pi ID
     device_serial_number = get_serial_number()
     device_id = "raspi-" + device_serial_number
@@ -127,10 +127,33 @@ def main():
     """
     )
 
-    mqtt_client = mqtt.Client(client_id=device_id)
-    mqtt_client.on_connect = on_connect
-    mqtt_client.on_publish = on_publish
-    mqtt_client.connect(args.broker, port=args.port)
+    mqtt_conf = setup_mqtt_config(
+        {
+            "broker": args.broker,
+            "port": args.port,
+            "client_id": device_id,
+            "topic_prefix": args.topic,
+        }
+    )
+
+    # Create LCD instance
+    disp = ST7735.ST7735(
+        port=0, cs=1, dc=9, backlight=12, rotation=270, spi_speed_hz=10000000
+    )
+
+    # Initialize display
+    disp.begin()
+
+    # Display Raspberry Pi serial and Wi-Fi status
+    print("RPi serial: {}".format(device_serial_number))
+    print("Wi-Fi: {}\n".format("connected" if check_wifi() else "disconnected"))
+    print("MQTT broker IP: {}".format(args.broker))
+
+    loop.run_until_complete(_main_loop(mqtt_conf, STOP))
+
+
+async def _main_loop(mqtt_conf: MQTTConf, interval: int, STOP: asyncio.Event) -> None:
+    mqtt_client = await get_mqtt_client(mqtt_conf)
 
     bus = SMBus(1)
 
@@ -157,13 +180,7 @@ def main():
     except SerialTimeoutError:
         print("No PMS5003 sensor connected")
 
-    # Display Raspberry Pi serial and Wi-Fi status
-    print("RPi serial: {}".format(device_serial_number))
-    print("Wi-Fi: {}\n".format("connected" if check_wifi() else "disconnected"))
-    print("MQTT broker IP: {}".format(args.broker))
-
     # Main loop to read data, display, and send over mqtt
-    mqtt_client.loop_start()
     while True:
         try:
             values = read_bme280(bme280)
@@ -172,14 +189,16 @@ def main():
             if HAS_PMS:
                 pms_values = read_pms5003(pms5003)
                 values.update(pms_values)
-            values["serial"] = device_serial_number
             print(values)
-            mqtt_client.publish(args.topic, json.dumps(values))
-            display_status(disp, args.broker)
-            time.sleep(args.interval)
+            mqtt_client.publish(mqtt_conf["topic_prefix"], json.dumps(values))
+            # display_status(disp, args.broker)
+            await asyncio.sleep(interval)
+            if STOP.is_set():
+                break
         except Exception as e:
             print(e)
 
+    await mqtt_client.disconnect()
 
-if __name__ == "__main__":
-    main()
+
+main()
