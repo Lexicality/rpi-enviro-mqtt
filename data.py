@@ -15,7 +15,7 @@
 """
 from __future__ import annotations
 
-from subprocess import PIPE, Popen, check_output
+import subprocess
 
 from bme280 import BME280
 from enviroplus import gas
@@ -24,6 +24,7 @@ from pms5003 import PMS5003, ReadTimeoutError
 
 BME280Result = dict  # TODO
 PMS5003Result = dict  # TODO
+GasResult = dict  # TODO
 
 
 def read_ltr559(ltr559: LTR559) -> int:
@@ -32,8 +33,13 @@ def read_ltr559(ltr559: LTR559) -> int:
 
 # Get CPU temperature to use for compensation
 def get_cpu_temperature() -> float:
-    process = Popen(["vcgencmd", "measure_temp"], stdout=PIPE, universal_newlines=True)
-    output, _error = process.communicate()
+    result = subprocess.run(
+        ["vcgencmd", "measure_temp"],
+        capture_output=True,
+        text=True,
+        encoding="UTF-8",
+    )
+    output = result.stdout
     return float(output[output.index("=") + 1 : output.rindex("'")])
 
 
@@ -41,48 +47,49 @@ def get_cpu_temperature() -> float:
 def read_bme280(bme280: BME280) -> BME280Result:
     # Compensation factor for temperature
     comp_factor = 2.25
-    values = {}
     cpu_temp = get_cpu_temperature()
     raw_temp = bme280.get_temperature()  # float
     comp_temp = raw_temp - ((cpu_temp - raw_temp) / comp_factor)
-    values["temperature"] = int(comp_temp)
-    values["pressure"] = round(
-        int(bme280.get_pressure() * 100), -1
-    )  # round to nearest 10
-    values["humidity"] = int(bme280.get_humidity())
+    return {
+        "temperature": int(comp_temp),
+        "pressure": round(int(bme280.get_pressure() * 100), -1),  # round to nearest 10
+        "humidity": int(bme280.get_humidity()),
+    }
+
+
+def read_gas() -> GasResult:
     data = gas.read_all()
-    values["oxidised"] = int(data.oxidising / 1000)
-    values["reduced"] = int(data.reducing / 1000)
+    return {
+        "oxidised": int(data.oxidising / 1000),
+        "reduced": int(data.reducing / 1000),
+    }
 
 
 # Read values PMS5003 and return as dict
-def read_pms5003(pms5003: PMS5003) -> PMS5003Result:
-    values = {}
+def read_pms5003(pms5003: PMS5003, retry=True) -> PMS5003Result:
     try:
         pm_values = pms5003.read()  # int
-        values["pm1"] = pm_values.pm_ug_per_m3(1)
-        values["pm25"] = pm_values.pm_ug_per_m3(2.5)
-        values["pm10"] = pm_values.pm_ug_per_m3(10)
+        return {
+            "pm1": pm_values.pm_ug_per_m3(1),
+            "pm25": pm_values.pm_ug_per_m3(2.5),
+            "pm10": pm_values.pm_ug_per_m3(10),
+        }
     except ReadTimeoutError:
-        pms5003.reset()
-        pm_values = pms5003.read()
-        values["pm1"] = pm_values.pm_ug_per_m3(1)
-        values["pm25"] = pm_values.pm_ug_per_m3(2.5)
-        values["pm10"] = pm_values.pm_ug_per_m3(10)
-    return values
+        if retry:
+            return read_pms5003(pms5003, retry=False)
+        raise
 
 
 # Get Raspberry Pi serial number to use as ID
-def get_serial_number():
+def get_serial_number() -> str:
     with open("/proc/cpuinfo", "r") as f:
         for line in f:
             if line[0:6] == "Serial":
                 return line.split(":")[1].strip()
 
+    return "0000000000000000"
+
 
 # Check for Wi-Fi connection
-def check_wifi():
-    if check_output(["hostname", "-I"]):
-        return True
-    else:
-        return False
+def check_wifi() -> bool:
+    return bool(subprocess.check_output(["hostname", "-I"]))

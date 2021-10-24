@@ -32,7 +32,14 @@ from PIL import Image, ImageDraw, ImageFont
 from pms5003 import PMS5003, SerialTimeoutError
 from smbus2 import SMBus
 
-from .data import check_wifi, get_serial_number, read_bme280, read_ltr559, read_pms5003
+from .data import (
+    check_wifi,
+    get_serial_number,
+    read_bme280,
+    read_gas,
+    read_ltr559,
+    read_pms5003,
+)
 
 DEFAULT_MQTT_BROKER_IP = "localhost"
 DEFAULT_MQTT_BROKER_PORT = 1883
@@ -144,7 +151,7 @@ def main():
     HAS_PMS = False
     try:
         pms5003 = PMS5003()
-        pm_values = pms5003.read()
+        pms5003.read()
         HAS_PMS = True
         print("PMS5003 sensor is connected")
     except SerialTimeoutError:
@@ -161,6 +168,7 @@ def main():
         try:
             values = read_bme280(bme280)
             values["lux"] = read_ltr559(ltr559)
+            values.update(read_gas())
             if HAS_PMS:
                 pms_values = read_pms5003(pms5003)
                 values.update(pms_values)
