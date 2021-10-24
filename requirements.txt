@@ -1,2 +1,4 @@
+enviroplus==0.0.4
 paho-mqtt~=1.6
+smbus2~=0.4
 typing_extensions~=3.10
