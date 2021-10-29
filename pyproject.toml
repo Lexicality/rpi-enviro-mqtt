@@ -4,3 +4,4 @@ target-version = ['py37']
 [tool.isort]
 profile = 'black'
 float_to_top = true
+combine_as_imports = true
