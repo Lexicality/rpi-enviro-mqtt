@@ -122,3 +122,15 @@ def get_serial_number() -> str:
 # Check for Wi-Fi connection
 def check_wifi() -> bool:
     return bool(subprocess.check_output(["hostname", "-I"]))
+
+
+def get_current_data(ltr559: LTR559, bme280: BME280) -> dict:
+    data = {
+        **read_bme280(bme280),
+        **read_gas(),
+        "lux": read_ltr559(ltr559),
+    }
+    pms_data = read_pms5003()
+    if pms_data:
+        data.update(pms_data)
+    return data

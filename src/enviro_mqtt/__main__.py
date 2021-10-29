@@ -22,22 +22,16 @@ Example run: python3 mqtt-all.py --broker 192.168.1.164 --topic enviro
 import argparse
 import asyncio
 import json
+import logging
 import signal
 
 from bme280 import BME280
 from ltr559 import LTR559
-from smbus2 import SMBus
 
-from .data import (
-    check_wifi,
-    get_serial_number,
-    read_bme280,
-    read_gas,
-    read_ltr559,
-    read_pms5003,
-    run_pms5003,
-)
+from .data import check_wifi, get_current_data, get_serial_number, run_pms5003
 from .mqtt import MQTTConf, get_mqtt_client, setup_mqtt_config
+
+log = logging.getLogger(__name__)
 
 DEFAULT_MQTT_BROKER_IP = "localhost"
 DEFAULT_MQTT_BROKER_PORT = 1883
@@ -119,34 +113,32 @@ def main():
     loop.stop()
 
 
-async def _main_loop(mqtt_conf: MQTTConf, interval: int, STOP: asyncio.Event) -> None:
+async def _main_loop(
+    loop: asyncio.AbstractEventLoop,
+    mqtt_conf: MQTTConf,
+    interval: int,
+    STOP: asyncio.Event,
+) -> None:
     mqtt_client = await get_mqtt_client(mqtt_conf)
 
-    bus = SMBus(1)
-
     ltr559 = LTR559()
+    bme280 = BME280()
 
-    # Create BME280 instance
-    bme280 = BME280(i2c_dev=bus)
+    stop_waiter = loop.create_task(STOP.wait())
 
     # Main loop to read data, display, and send over mqtt
     while True:
         try:
-            values = read_bme280(bme280)
-            values["lux"] = read_ltr559(ltr559)
-            values.update(read_gas())
-            pms_values = read_pms5003()
-            if pms_values:
-                values.update(pms_values)
+            values = get_current_data(ltr559, bme280)
             print(values)
             mqtt_client.publish(mqtt_conf["topic_prefix"], json.dumps(values))
-            await asyncio.sleep(interval)
+            await asyncio.wait(
+                {asyncio.sleep(interval), stop_waiter},
+                return_when=asyncio.FIRST_COMPLETED,
+            )
             if STOP.is_set():
                 break
-        except Exception as e:
-            print(e)
+        except Exception:
+            log.exception("Error getting data")
 
     await mqtt_client.disconnect()
-
-
-main()
