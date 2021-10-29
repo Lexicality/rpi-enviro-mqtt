@@ -15,12 +15,19 @@
 """
 from __future__ import annotations
 
+import asyncio
 import subprocess
+from typing import Optional
 
 from bme280 import BME280
 from enviroplus import gas
 from ltr559 import LTR559
-from pms5003 import PMS5003, ReadTimeoutError
+from pms5003 import (
+    PMS5003,
+    ChecksumMismatchError as PMS5003ChecksumError,
+    ReadTimeoutError as PMS5003ReadTimeoutError,
+    SerialTimeoutError as PMS5003SerialTimeoutError,
+)
 
 BME280Result = dict  # TODO
 PMS5003Result = dict  # TODO
@@ -65,19 +72,41 @@ def read_gas() -> GasResult:
     }
 
 
+_pms5003_data: Optional[PMS5003Result] = None
+
+
+def _read_pms5003(pms5003: PMS5003, no_retries=False) -> Optional[PMS5003Result]:
+    while True:
+        try:
+            pm_values = pms5003.read()
+            return {
+                "pm1": pm_values.pm_ug_per_m3(1),
+                "pm25": pm_values.pm_ug_per_m3(2.5),
+                "pm10": pm_values.pm_ug_per_m3(10),
+            }
+        except (PMS5003ReadTimeoutError):
+            continue
+        except (PMS5003SerialTimeoutError, PMS5003ChecksumError):
+            if no_retries:
+                return None
+            pms5003.reset()
+            continue
+
+
+async def run_pms5003(loop: asyncio.AbstractEventLoop, STOP: asyncio.Event) -> None:
+    pms5003 = await loop.run_in_executor(None, lambda: PMS5003())
+    _pms5003_data = await loop.run_in_executor(None, _read_pms5003, pms5003, True)
+    if _pms5003_data is None:
+        return
+    while True:
+        _pms5003_data = await loop.run_in_executor(None, _read_pms5003, pms5003, True)
+        if STOP.is_set():
+            return
+
+
 # Read values PMS5003 and return as dict
-def read_pms5003(pms5003: PMS5003, retry=True) -> PMS5003Result:
-    try:
-        pm_values = pms5003.read()  # int
-        return {
-            "pm1": pm_values.pm_ug_per_m3(1),
-            "pm25": pm_values.pm_ug_per_m3(2.5),
-            "pm10": pm_values.pm_ug_per_m3(10),
-        }
-    except ReadTimeoutError:
-        if retry:
-            return read_pms5003(pms5003, retry=False)
-        raise
+def read_pms5003() -> Optional[PMS5003Result]:
+    return _pms5003_data
 
 
 # Get Raspberry Pi serial number to use as ID

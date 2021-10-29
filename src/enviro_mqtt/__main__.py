@@ -26,7 +26,6 @@ import signal
 
 from bme280 import BME280
 from ltr559 import LTR559
-from pms5003 import PMS5003, SerialTimeoutError
 from smbus2 import SMBus
 
 from .data import (
@@ -36,6 +35,7 @@ from .data import (
     read_gas,
     read_ltr559,
     read_pms5003,
+    run_pms5003,
 )
 from .mqtt import MQTTConf, get_mqtt_client, setup_mqtt_config
 
@@ -114,7 +114,9 @@ def main():
     print("Wi-Fi: {}\n".format("connected" if check_wifi() else "disconnected"))
     print("MQTT broker IP: {}".format(args.broker))
 
+    loop.call_soon(run_pms5003, loop, STOP)
     loop.run_until_complete(_main_loop(mqtt_conf, STOP))
+    loop.stop()
 
 
 async def _main_loop(mqtt_conf: MQTTConf, interval: int, STOP: asyncio.Event) -> None:
@@ -127,24 +129,14 @@ async def _main_loop(mqtt_conf: MQTTConf, interval: int, STOP: asyncio.Event) ->
     # Create BME280 instance
     bme280 = BME280(i2c_dev=bus)
 
-    # Try to create PMS5003 instance
-    HAS_PMS = False
-    try:
-        pms5003 = PMS5003()
-        pms5003.read()
-        HAS_PMS = True
-        print("PMS5003 sensor is connected")
-    except SerialTimeoutError:
-        print("No PMS5003 sensor connected")
-
     # Main loop to read data, display, and send over mqtt
     while True:
         try:
             values = read_bme280(bme280)
             values["lux"] = read_ltr559(ltr559)
             values.update(read_gas())
-            if HAS_PMS:
-                pms_values = read_pms5003(pms5003)
+            pms_values = read_pms5003()
+            if pms_values:
                 values.update(pms_values)
             print(values)
             mqtt_client.publish(mqtt_conf["topic_prefix"], json.dumps(values))
