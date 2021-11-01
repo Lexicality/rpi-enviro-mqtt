@@ -33,6 +33,7 @@ class MQTTConf(TypedDict):
     topic_prefix: str
     username: Optional[str]
     password: Optional[str]
+    publish_interval: int
 
 
 DEFAULT_MQTT_CONFIG: MQTTConf = {
@@ -47,6 +48,7 @@ DEFAULT_MQTT_CONFIG: MQTTConf = {
     "topic_prefix": "enviroplus",
     "username": None,
     "password": None,
+    "publish_interval": 60,
 }
 
 

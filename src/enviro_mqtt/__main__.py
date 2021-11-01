@@ -19,12 +19,14 @@ Run mqtt broker on localhost: sudo apt-get install mosquitto mosquitto-clients
 Example run: python3 mqtt-all.py --broker 192.168.1.164 --topic enviro
 """
 
-import argparse
+from __future__ import annotations
+
 import asyncio
 import json
 import logging
 import signal
 
+import yaml
 from bme280 import BME280
 from ltr559 import LTR559
 
@@ -33,41 +35,17 @@ from .mqtt import MQTTConf, get_mqtt_client, setup_mqtt_config
 
 log = logging.getLogger(__name__)
 
-DEFAULT_MQTT_BROKER_IP = "localhost"
-DEFAULT_MQTT_BROKER_PORT = 1883
-DEFAULT_MQTT_TOPIC = "enviroplus"
-DEFAULT_READ_INTERVAL = 5
-
 
 def _on_signal(STOP: asyncio.Event, *args):
     STOP.set()
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Publish enviroplus values over mqtt")
-    parser.add_argument(
-        "--broker",
-        default=DEFAULT_MQTT_BROKER_IP,
-        type=str,
-        help="mqtt broker IP",
-    )
-    parser.add_argument(
-        "--port",
-        default=DEFAULT_MQTT_BROKER_PORT,
-        type=int,
-        help="mqtt broker port",
-    )
-    parser.add_argument(
-        "--topic", default=DEFAULT_MQTT_TOPIC, type=str, help="mqtt topic"
-    )
-    parser.add_argument(
-        "--interval",
-        default=DEFAULT_READ_INTERVAL,
-        type=int,
-        help="the read interval in seconds",
-    )
-    args = parser.parse_args()
+def _load_config() -> dict:
+    with open("configuration.yaml", encoding="utf-8") as f:
+        return yaml.safe_load(f)
 
+
+def main():
     STOP = asyncio.Event()
 
     loop = asyncio.get_event_loop()
@@ -79,44 +57,37 @@ def main():
     device_serial_number = get_serial_number()
     device_id = "raspi-" + device_serial_number
 
+    conf = _load_config()
+    raw_mqtt_conf = conf.get("mqtt", {})
+    raw_mqtt_conf.setdefault("client_id", device_id)
+    mqtt_conf = setup_mqtt_config(raw_mqtt_conf)
+
     print(
         f"""mqtt-all.py - Reads Enviro plus data and sends over mqtt.
 
-    broker: {args.broker}
-    client_id: {device_id}
-    port: {args.port}
-    topic: {args.topic}
+    broker: {mqtt_conf["broker"]}
+    client_id: {mqtt_conf["client_id"]}
+    port: {mqtt_conf["port"]}
+    topic: {mqtt_conf["topic_prefix"]}
 
     Press Ctrl+C to exit!
 
     """
     )
 
-    mqtt_conf = setup_mqtt_config(
-        {
-            "broker": args.broker,
-            "port": args.port,
-            "client_id": device_id,
-            "topic_prefix": args.topic,
-        }
-    )
-
-    # Create LCD instance
-
     # Display Raspberry Pi serial and Wi-Fi status
     print("RPi serial: {}".format(device_serial_number))
     print("Wi-Fi: {}\n".format("connected" if check_wifi() else "disconnected"))
-    print("MQTT broker IP: {}".format(args.broker))
+    print("MQTT broker IP: {}".format(mqtt_conf["broker"]))
 
     loop.call_soon(run_pms5003, loop, STOP)
-    loop.run_until_complete(_main_loop(mqtt_conf, STOP))
+    loop.run_until_complete(_main_loop(loop, mqtt_conf, STOP))
     loop.stop()
 
 
 async def _main_loop(
     loop: asyncio.AbstractEventLoop,
     mqtt_conf: MQTTConf,
-    interval: int,
     STOP: asyncio.Event,
 ) -> None:
     mqtt_client = await get_mqtt_client(mqtt_conf)
@@ -133,7 +104,7 @@ async def _main_loop(
             print(values)
             mqtt_client.publish(mqtt_conf["topic_prefix"], json.dumps(values))
             await asyncio.wait(
-                {asyncio.sleep(interval), stop_waiter},
+                {asyncio.sleep(mqtt_conf["publish_interval"]), stop_waiter},
                 return_when=asyncio.FIRST_COMPLETED,
             )
             if STOP.is_set():
