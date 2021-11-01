@@ -15,9 +15,10 @@
 """
 from __future__ import annotations
 
-from typing import Optional, TypedDict, cast
+from typing import Optional, cast
 
 from gmqtt import Client as MQTTClient
+from typing_extensions import TypedDict
 
 
 class MQTTConf(TypedDict):
