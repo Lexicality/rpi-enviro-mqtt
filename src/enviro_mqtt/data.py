@@ -18,7 +18,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import subprocess
-from typing import Optional
+from typing import Optional, Tuple
 
 from bme280 import BME280
 from enviroplus import gas
@@ -35,6 +35,20 @@ log = logging.getLogger(__name__)
 BME280Result = dict  # TODO
 PMS5003Result = dict  # TODO
 GasResult = dict  # TODO
+
+
+def setup_sensors() -> Tuple[BME280, LTR559]:
+    logging.info("Setting up the ADS1015")
+    gas.setup()
+    gas.read_all()
+    logging.info("Setting up the BME280")
+    bme280 = BME280()
+    bme280.setup()
+    bme280.update_sensor()
+    logging.info("Setting up the LTR559")
+    ltr559 = LTR559()
+    ltr559.update_sensor()
+    return bme280, ltr559
 
 
 def read_ltr559(ltr559: LTR559) -> int:
@@ -98,18 +112,24 @@ def _read_pms5003(pms5003: PMS5003, no_retries=False) -> Optional[PMS5003Result]
             continue
 
 
-async def run_pms5003(loop: asyncio.AbstractEventLoop, STOP: asyncio.Event) -> None:
+async def _run_pms5003(loop: asyncio.AbstractEventLoop, pms5003: PMS5003) -> None:
+    global _pms5003_data
+    while True:
+        _pms5003_data = await loop.run_in_executor(None, _read_pms5003, pms5003, True)
+
+
+async def setup_pms5003(loop: asyncio.AbstractEventLoop) -> Optional[asyncio.Task]:
     pms5003 = await loop.run_in_executor(None, lambda: PMS5003())
     global _pms5003_data
     _pms5003_data = await loop.run_in_executor(None, _read_pms5003, pms5003, True)
+
     if _pms5003_data is None:
         log.info("No PMS5003 detected!")
-        return
+        return None
+
     log.info("PMS5003 found!")
-    while True:
-        _pms5003_data = await loop.run_in_executor(None, _read_pms5003, pms5003, True)
-        if STOP.is_set():
-            return
+
+    return loop.create_task(_run_pms5003(loop, pms5003))
 
 
 # Read values PMS5003 and return as dict
