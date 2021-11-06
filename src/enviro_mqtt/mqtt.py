@@ -37,6 +37,8 @@ class MQTTConf(TypedDict):
     username: Optional[str]
     password: Optional[str]
     publish_interval: int
+    retain: bool
+    qos: int
 
 
 DEFAULT_MQTT_CONFIG: MQTTConf = {
@@ -52,6 +54,8 @@ DEFAULT_MQTT_CONFIG: MQTTConf = {
     "username": None,
     "password": None,
     "publish_interval": 60,
+    "retain": True,
+    "qos": 0,
 }
 
 
@@ -84,8 +88,8 @@ async def get_mqtt_client(mqtt_conf: MQTTConf) -> MQTTClient:
     client.on_connect = on_connect
     client.on_disconnect = on_disconnect
 
-    log.info("Connecting to %s", mqtt_conf["broker"])
+    log.info("Connecting to %s:%d", mqtt_conf["broker"], mqtt_conf["port"])
 
-    await client.connect(mqtt_conf["broker"])
+    await client.connect(mqtt_conf["broker"], mqtt_conf["port"])
 
     return client

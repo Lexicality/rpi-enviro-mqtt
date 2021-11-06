@@ -22,7 +22,6 @@ Example run: python3 mqtt-all.py --broker 192.168.1.164 --topic enviro
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import signal
 
@@ -89,7 +88,7 @@ def main():
 
     pms5003_task = loop.create_task(run_pms5003(loop, STOP))
 
-    loop.run_until_complete(_main_loop(loop, mqtt_conf, STOP))
+    loop.run_until_complete(_main_loop(loop, mqtt_conf, device_serial_number, STOP))
 
     pms5003_task.cancel()
     loop.stop()
@@ -98,6 +97,7 @@ def main():
 async def _main_loop(
     loop: asyncio.AbstractEventLoop,
     mqtt_conf: MQTTConf,
+    serial: str,
     STOP: asyncio.Event,
 ) -> None:
     mqtt_client = await get_mqtt_client(mqtt_conf)
@@ -108,13 +108,20 @@ async def _main_loop(
     stop_waiter = loop.create_task(STOP.wait())
 
     log.info("It's looping time")
+    topic = mqtt_conf["topic_prefix"] + "/" + serial
 
     # Main loop to read data, display, and send over mqtt
     while True:
         try:
             values = get_current_data(ltr559, bme280)
             print(values)
-            mqtt_client.publish(mqtt_conf["topic_prefix"], json.dumps(values))
+            mqtt_client.publish(
+                topic,
+                values,
+                qos=mqtt_conf["qos"],
+                retain=mqtt_conf["retain"],
+                content_type="application/json",
+            )
             await asyncio.wait(
                 {asyncio.sleep(mqtt_conf["publish_interval"]), stop_waiter},
                 return_when=asyncio.FIRST_COMPLETED,
