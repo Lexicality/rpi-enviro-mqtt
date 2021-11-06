@@ -15,10 +15,13 @@
 """
 from __future__ import annotations
 
+import logging
 from typing import Optional, cast
 
 from gmqtt import Client as MQTTClient
 from typing_extensions import TypedDict
+
+log = logging.getLogger(__name__)
 
 
 class MQTTConf(TypedDict):
@@ -52,12 +55,15 @@ DEFAULT_MQTT_CONFIG: MQTTConf = {
 }
 
 
-def on_connect(client, flags, rc, properties):
-    print("Connected")
+def on_connect(client, flags: int, rc: int, properties: dict):
+    log.info("Connected with flags %X and rc %X!", flags, rc)
 
 
-def on_disconnect(client, packet, exc=None):
-    print("Disconnected")
+def on_disconnect(client, packet: bytes):
+    log.warning(
+        "Disconnected with packet %s!",
+        packet.decode("utf-8", errors="replace"),
+    )
 
 
 def setup_mqtt_config(raw_config: dict) -> MQTTConf:
@@ -77,6 +83,8 @@ async def get_mqtt_client(mqtt_conf: MQTTConf) -> MQTTClient:
     # wip
     client.on_connect = on_connect
     client.on_disconnect = on_disconnect
+
+    log.info("Connecting to %s", mqtt_conf["broker"])
 
     await client.connect(mqtt_conf["broker"])
 

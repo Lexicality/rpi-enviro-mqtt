@@ -37,6 +37,7 @@ log = logging.getLogger(__name__)
 
 
 def _on_signal(STOP: asyncio.Event, *args):
+    log.warning("SIGINT!")
     STOP.set()
 
 
@@ -46,6 +47,12 @@ def _load_config() -> dict:
 
 
 def main():
+    logging.basicConfig(
+        level=logging.INFO,
+        # level=logging.DEBUG,
+        format="%(asctime)s %(name)-16s %(levelname)-8s %(message)s",
+        datefmt="%H:%M:%S",
+    )
     STOP = asyncio.Event()
 
     loop = asyncio.get_event_loop()
@@ -97,6 +104,8 @@ async def _main_loop(
 
     stop_waiter = loop.create_task(STOP.wait())
 
+    log.info("It's looping time")
+
     # Main loop to read data, display, and send over mqtt
     while True:
         try:
@@ -108,6 +117,7 @@ async def _main_loop(
                 return_when=asyncio.FIRST_COMPLETED,
             )
             if STOP.is_set():
+                log.info("Stopping!")
                 break
         except Exception:
             log.exception("Error getting data")

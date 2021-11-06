@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import subprocess
 from typing import Optional
 
@@ -28,6 +29,8 @@ from pms5003 import (
     ReadTimeoutError as PMS5003ReadTimeoutError,
     SerialTimeoutError as PMS5003SerialTimeoutError,
 )
+
+log = logging.getLogger(__name__)
 
 BME280Result = dict  # TODO
 PMS5003Result = dict  # TODO
@@ -85,10 +88,12 @@ def _read_pms5003(pms5003: PMS5003, no_retries=False) -> Optional[PMS5003Result]
                 "pm10": pm_values.pm_ug_per_m3(10),
             }
         except (PMS5003ReadTimeoutError):
+            log.debug("Timed out :(")
             continue
         except (PMS5003SerialTimeoutError, PMS5003ChecksumError):
             if no_retries:
                 return None
+            log.exception("Fatal(ish) error reading from PMS5003")
             pms5003.reset()
             continue
 
@@ -97,7 +102,9 @@ async def run_pms5003(loop: asyncio.AbstractEventLoop, STOP: asyncio.Event) -> N
     pms5003 = await loop.run_in_executor(None, lambda: PMS5003())
     _pms5003_data = await loop.run_in_executor(None, _read_pms5003, pms5003, True)
     if _pms5003_data is None:
+        log.info("No PMS5003 detected!")
         return
+    log.info("PMS5003 found!")
     while True:
         _pms5003_data = await loop.run_in_executor(None, _read_pms5003, pms5003, True)
         if STOP.is_set():
