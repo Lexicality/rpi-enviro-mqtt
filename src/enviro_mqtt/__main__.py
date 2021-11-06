@@ -123,3 +123,6 @@ async def _main_loop(
             log.exception("Error getting data")
 
     await mqtt_client.disconnect()
+
+
+main()
