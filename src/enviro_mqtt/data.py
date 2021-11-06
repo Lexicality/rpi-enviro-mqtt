@@ -100,6 +100,7 @@ def _read_pms5003(pms5003: PMS5003, no_retries=False) -> Optional[PMS5003Result]
 
 async def run_pms5003(loop: asyncio.AbstractEventLoop, STOP: asyncio.Event) -> None:
     pms5003 = await loop.run_in_executor(None, lambda: PMS5003())
+    global _pms5003_data
     _pms5003_data = await loop.run_in_executor(None, _read_pms5003, pms5003, True)
     if _pms5003_data is None:
         log.info("No PMS5003 detected!")

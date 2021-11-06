@@ -87,8 +87,11 @@ def main():
     print("Wi-Fi: {}\n".format("connected" if check_wifi() else "disconnected"))
     print("MQTT broker IP: {}".format(mqtt_conf["broker"]))
 
-    loop.call_soon(run_pms5003, loop, STOP)
+    pms5003_task = loop.create_task(run_pms5003(loop, STOP))
+
     loop.run_until_complete(_main_loop(loop, mqtt_conf, STOP))
+
+    pms5003_task.cancel()
     loop.stop()
 
 
