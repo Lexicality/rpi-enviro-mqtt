@@ -86,6 +86,7 @@ def read_gas() -> GasResult:
     return {
         "oxidising": round(data.oxidising / 1000, 4),
         "reducing": round(data.reducing / 1000, 4),
+        "nh3": round(data.nh3 / 1000, 4),
     }
 
 
@@ -96,10 +97,17 @@ def _read_pms5003(pms5003: PMS5003, no_retries=False) -> Optional[PMS5003Result]
     while True:
         try:
             pm_values = pms5003.read()
+            log.debug("PMS5003: %s", str(pm_values))
             return {
                 "pm1": pm_values.pm_ug_per_m3(1),
                 "pm25": pm_values.pm_ug_per_m3(2.5),
                 "pm10": pm_values.pm_ug_per_m3(10),
+                "pl03": pm_values.pm_per_1l_air(0.3),
+                "pl05": pm_values.pm_per_1l_air(0.5),
+                "pl1": pm_values.pm_per_1l_air(1),
+                "pl25": pm_values.pm_per_1l_air(2.5),
+                "pl5": pm_values.pm_per_1l_air(5),
+                "pl10": pm_values.pm_per_1l_air(10),
             }
         except (PMS5003ReadTimeoutError):
             log.debug("Timed out :(")
