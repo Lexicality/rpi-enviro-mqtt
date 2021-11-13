@@ -26,13 +26,18 @@ import logging
 import signal
 import sys
 from datetime import timedelta
+from pathlib import PurePosixPath
+from typing import Any, Dict, Optional
 
 import gmqtt
 import yaml
 from bme280 import BME280
+from getmac import get_mac_address
 from ltr559 import LTR559
 
 from .data import (
+    DEFAULT_SENSORS,
+    PMS5003_SENSORS,
     check_wifi,
     get_current_data,
     get_serial_number,
@@ -113,6 +118,77 @@ def main():
     loop.stop()
 
 
+# It'd probably make my life easier to type these but I'm lazy
+HADiscoveryDevice = Dict[str, Any]
+HADiscoveryPacket = Dict[str, Any]
+
+
+def _do_discovery(
+    mqtt_conf: MQTTConf,
+    mqtt_client: gmqtt.Client,
+    serial: str,
+    has_pms5003: bool,
+) -> None:
+    if not mqtt_conf["discovery"]:
+        return
+
+    data: HADiscoveryPacket
+    device: Optional[HADiscoveryDevice] = None
+
+    if mqtt_conf["discovery_device"]:
+        device = {
+            "ids": serial,
+            "mdl": "Enviro+ MQTT",
+            "mf": "Lexi Robinson",
+            "name": mqtt_conf["discovery_device_name"],
+        }
+        mac = get_mac_address()
+        if mac:
+            device["connections"] = [["mac", mac]]
+
+    config_topic = PurePosixPath(mqtt_conf["discovery_prefix"], "sensor")
+    state_topic = str(PurePosixPath(mqtt_conf["topic_prefix"], serial))
+
+    log.info("Publishing HA discovery to %s", config_topic)
+
+    for name, sensor in DEFAULT_SENSORS.items():
+        data = {
+            **sensor,
+            "uniq_id": serial + "_" + name,
+            "stat_t": state_topic,
+        }
+        if device:
+            data["dev"] = device
+
+        mqtt_client.publish(
+            str(config_topic / data["uniq_id"] / "config"),
+            data,
+            qos=1,
+            retain=mqtt_conf["discovery_retain"],
+            content_type="application/json",
+        )
+
+    if not has_pms5003:
+        return
+
+    for name, sensor in PMS5003_SENSORS.items():
+        data = {
+            **sensor,
+            "uniq_id": serial + "_" + name,
+            "stat_t": state_topic,
+        }
+        if device:
+            data["dev"] = device
+
+        mqtt_client.publish(
+            str(config_topic / data["uniq_id"] / "config"),
+            data,
+            qos=1,
+            retain=mqtt_conf["discovery_retain"],
+            content_type="application/json",
+        )
+
+
 async def _main(
     loop: asyncio.AbstractEventLoop,
     mqtt_conf: MQTTConf,
@@ -145,6 +221,8 @@ async def _main(
         except asyncio.TimeoutError:
             client_t.cancel()
             raise
+
+    _do_discovery(mqtt_conf, mqtt_client, serial, pms5003_t is not None)
 
     mqtt_client = await client_t
     logging.info("Sensors are warm, going live")

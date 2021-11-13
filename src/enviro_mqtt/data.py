@@ -58,6 +58,99 @@ class GasResult(TypedDict):
     nh3: float
 
 
+DEFAULT_SENSORS = {
+    "lux": {
+        "dev_cla": "illuminance",
+        "name": "Brightness",
+        "unit_of_meas": "lx",
+        "val_tpl": "{{ value_json.lux }}",
+    },
+    "temp": {
+        "dev_cla": "temperature",
+        "name": "Temperature",
+        "unit_of_meas": "°C",
+        "val_tpl": "{{ value_json.temperature }}",
+    },
+    "humidity": {
+        "dev_cla": "humidity",
+        "name": "Humidity",
+        "unit_of_meas": "%",
+        "val_tpl": "{{ value_json.humidity }}",
+    },
+    "pressure": {
+        "dev_cla": "pressure",
+        "name": "Pressure",
+        "unit_of_meas": "hPa",
+        "val_tpl": "{{ value_json.pressure }}",
+    },
+    "oxidising": {
+        "name": "Oxidising Gas",
+        "unit_of_meas": "kΩ",
+        "val_tpl": "{{ value_json.oxidising }}",
+    },
+    "reducing": {
+        "name": "Reducing Gas",
+        "unit_of_meas": "kΩ",
+        "val_tpl": "{{ value_json.reducing }}",
+    },
+    "nh3": {
+        "name": "Ammonia Gas",
+        "unit_of_meas": "kΩ",
+        "val_tpl": "{{ value_json.nh3 }}",
+    },
+}
+PMS5003_SENSORS = {
+    "pm1": {
+        "dev_cla": "pm1",
+        "name": "PM1",
+        "unit_of_meas": "µg/m³",
+        "val_tpl": "{{ value_json.pm1 }}",
+    },
+    "pm25": {
+        "dev_cla": "pm25",
+        "name": "PM2.5",
+        "unit_of_meas": "µg/m³",
+        "val_tpl": "{{ value_json.pm25 }}",
+    },
+    "pm10": {
+        "dev_cla": "pm10",
+        "name": "PM10",
+        "unit_of_meas": "µg/m³",
+        "val_tpl": "{{ value_json.pm10 }}",
+    },
+    "pl03": {
+        "name": "Particles >0.3um",
+        "unit_of_meas": "#/0.1L",
+        "val_tpl": "{{ value_json.pl03 }}",
+    },
+    "pl05": {
+        "name": "Particles >0.5um",
+        "unit_of_meas": "#/0.1L",
+        "val_tpl": "{{ value_json.pl05 }}",
+    },
+    "pl1": {
+        "name": "Particles >1um",
+        "unit_of_meas": "#/0.1L",
+        "val_tpl": "{{ value_json.pl1 }}",
+    },
+    "pl25": {
+        "name": "Particles >2.5um",
+        "unit_of_meas": "#/0.1L",
+        "val_tpl": "{{ value_json.pl25 }}",
+    },
+    "pl5": {
+        "name": "Particles >5um",
+        "unit_of_meas": "#/0.1L",
+        "val_tpl": "{{ value_json.pl5 }}",
+    },
+    "pl10": {
+        "name": "Particles >10um",
+        "unit_of_meas": "#/0.1L",
+        "val_tpl": "{{ value_json.pl10 }}",
+    },
+}
+
+
 def setup_sensors() -> Tuple[BME280, LTR559]:
     logging.info("Setting up the ADS1015")
     gas.setup()
