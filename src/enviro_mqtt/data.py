@@ -18,7 +18,8 @@ from __future__ import annotations
 import asyncio
 import logging
 import subprocess
-from typing import Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
+from typing_extensions import TypedDict
 
 from bme280 import BME280
 from enviroplus import gas
@@ -32,9 +33,29 @@ from pms5003 import (
 
 log = logging.getLogger(__name__)
 
-BME280Result = dict  # TODO
-PMS5003Result = dict  # TODO
-GasResult = dict  # TODO
+
+class BME280Result(TypedDict):
+    temperature: float
+    pressure: float
+    humidity: float
+
+
+class PMS5003Result(TypedDict):
+    pm1: int
+    pm25: int
+    pm10: int
+    pl03: int
+    pl05: int
+    pl1: int
+    pl25: int
+    pl5: int
+    pl10: int
+
+
+class GasResult(TypedDict):
+    oxidising: float
+    reducing: float
+    nh3: float
 
 
 def setup_sensors() -> Tuple[BME280, LTR559]:
@@ -161,7 +182,7 @@ def check_wifi() -> bool:
 
 
 def get_current_data(ltr559: LTR559, bme280: BME280) -> dict:
-    data = {
+    data: Dict[str, Any] = {
         **read_bme280(bme280),
         **read_gas(),
         "lux": read_ltr559(ltr559),
