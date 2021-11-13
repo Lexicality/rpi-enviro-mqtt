@@ -51,8 +51,8 @@ def setup_sensors() -> Tuple[BME280, LTR559]:
     return bme280, ltr559
 
 
-def read_ltr559(ltr559: LTR559) -> int:
-    return int(ltr559.get_lux())
+def read_ltr559(ltr559: LTR559) -> float:
+    return round(ltr559.get_lux(), 2)
 
 
 # Get CPU temperature to use for compensation
@@ -75,17 +75,17 @@ def read_bme280(bme280: BME280) -> BME280Result:
     raw_temp = bme280.get_temperature()  # float
     comp_temp = raw_temp - ((cpu_temp - raw_temp) / comp_factor)
     return {
-        "temperature": int(comp_temp),
-        "pressure": round(int(bme280.get_pressure() * 100), -1),  # round to nearest 10
-        "humidity": int(bme280.get_humidity()),
+        "temperature": round(comp_temp, 2),
+        "pressure": round(bme280.get_pressure(), 2),
+        "humidity": round(bme280.get_humidity(), 1),
     }
 
 
 def read_gas() -> GasResult:
     data = gas.read_all()
     return {
-        "oxidised": int(data.oxidising / 1000),
-        "reduced": int(data.reducing / 1000),
+        "oxidising": round(data.oxidising / 1000, 4),
+        "reducing": round(data.reducing / 1000, 4),
     }
 
 
