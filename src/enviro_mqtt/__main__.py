@@ -201,7 +201,7 @@ async def _main(
     pms5003_t = await pms5003_setup_t
 
     logging.info("Waiting for sensors to warm up")
-    await asyncio.wait(
+    await asyncio.wait(  # type: ignore [type-var] # Without this comment the pre-commit hook fails (spuriously)
         [
             client_t,
             asyncio.sleep(WARMUP_TIME),

@@ -3,6 +3,8 @@ repos:
     rev: "v1.8.0"
     hooks:
       - id: mypy
+        # mypy is being stroppy
+        additional_dependencies: ["types-pyyaml"]
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.1.11
