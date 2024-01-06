@@ -164,30 +164,6 @@ files = [
 test = ["atomicwrites (>=1.3.0)", "attrs (>=19.1.0)", "codecov (>=2.0.15)", "coverage (>=4.5.3)", "more-itertools (>=7.0.0)", "pluggy (>=0.11.0)", "py (>=1.8.0)", "pytest (>=5.4.0)", "pytest-asyncio (>=0.12.0)", "pytest-cov (>=2.7.1)", "six (>=1.12.0)", "uvloop (>=0.14.0)"]
 
 [[package]]
-name = "gpiod"
-version = "2.1.3"
-description = "Python bindings for libgpiod"
-optional = false
-python-versions = ">=3.9.0"
-files = [
-    {file = "gpiod-2.1.3.tar.gz", hash = "sha256:a33193d6cab79d252329f71666a35a3668e04f1f82bf9b93ee2c9ae852398b20"},
-]
-
-[[package]]
-name = "gpiodevice"
-version = "0.0.3"
-description = "Helper library for working with Linux gpiochip devices."
-optional = false
-python-versions = ">=3.7"
-files = [
-    {file = "gpiodevice-0.0.3-py3-none-any.whl", hash = "sha256:0cf2113e6bf7fd3f0b51c6f7372b6f6cea83fe01c14d79638841f07802ca4906"},
-    {file = "gpiodevice-0.0.3.tar.gz", hash = "sha256:b5bf91c5d4d5dd3dad3dacceb3176defe98672c958e1518616becdbb17ad51db"},
-]
-
-[package.dependencies]
-gpiod = "*"
-
-[[package]]
 name = "i2cdevice"
 version = "1.0.0"
 description = "Python framework for interacting with SMBus-compatible i2c devices"
@@ -347,19 +323,19 @@ i2cdevice = ">=1.0.0"
 
 [[package]]
 name = "pms5003"
-version = "1.0.0"
+version = "0.0.5"
 description = "PMS5003 Particulate Sensor"
 optional = false
-python-versions = ">=3.7"
+python-versions = "*"
 files = [
-    {file = "pms5003-1.0.0-py3-none-any.whl", hash = "sha256:85f6f4ddbc5abfe7369d3178ec7e1fc98104a31800e54d3bb2ef319f62d19440"},
-    {file = "pms5003-1.0.0.tar.gz", hash = "sha256:f474aa1048be8a6066262c812ea44c5f7be19417896ca88f79293fade5a82ed6"},
+    {file = "pms5003-0.0.5-py2-none-any.whl", hash = "sha256:8259f683e85b55c4f8e152b6a1174c264f2d48b3effcd57fcd73bacfd1e9b2fd"},
+    {file = "pms5003-0.0.5-py3-none-any.whl", hash = "sha256:71faeada77d9d514304b6fa7d830d3bc17d626c605871c7c0ae7fee47b7976f4"},
+    {file = "pms5003-0.0.5.tar.gz", hash = "sha256:721ab02c7cd0e50743871f2faf7acfa7482653fd770a87a76d73cbfa00b9a896"},
 ]
 
 [package.dependencies]
-gpiod = "*"
-gpiodevice = "*"
 pyserial = "*"
+setuptools = ">=30.4.0"
 
 [[package]]
 name = "pycparser"
@@ -483,6 +459,22 @@ files = [
 ]
 
 [[package]]
+name = "setuptools"
+version = "69.0.3"
+description = "Easily download, build, install, upgrade, and uninstall Python packages"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "setuptools-69.0.3-py3-none-any.whl", hash = "sha256:385eb4edd9c9d5c17540511303e39a147ce2fc04bc55289c322b9e5904fe2c05"},
+    {file = "setuptools-69.0.3.tar.gz", hash = "sha256:be1af57fc409f93647f2e8e4573a142ed38724b8cdd389706a867bb4efcf1e78"},
+]
+
+[package.extras]
+docs = ["furo", "jaraco.packaging (>=9.3)", "jaraco.tidelift (>=1.4)", "pygments-github-lexers (==0.0.5)", "rst.linker (>=1.9)", "sphinx (<7.2.5)", "sphinx (>=3.5)", "sphinx-favicon", "sphinx-inline-tabs", "sphinx-lint", "sphinx-notfound-page (>=1,<2)", "sphinx-reredirects", "sphinxcontrib-towncrier"]
+testing = ["build[virtualenv]", "filelock (>=3.4.0)", "flake8-2020", "ini2toml[lite] (>=0.9)", "jaraco.develop (>=7.21)", "jaraco.envs (>=2.2)", "jaraco.path (>=3.2.0)", "pip (>=19.1)", "pytest (>=6)", "pytest-black (>=0.3.7)", "pytest-checkdocs (>=2.4)", "pytest-cov", "pytest-enabler (>=2.2)", "pytest-mypy (>=0.9.1)", "pytest-perf", "pytest-ruff", "pytest-timeout", "pytest-xdist", "tomli-w (>=1.0.0)", "virtualenv (>=13.0.0)", "wheel"]
+testing-integration = ["build[virtualenv] (>=1.0.3)", "filelock (>=3.4.0)", "jaraco.envs (>=2.2)", "jaraco.path (>=3.2.0)", "packaging (>=23.1)", "pytest", "pytest-enabler", "pytest-xdist", "tomli", "virtualenv (>=13.0.0)", "wheel"]
+
+[[package]]
 name = "smbus2"
 version = "0.4.3"
 description = "smbus2 is a drop-in replacement for smbus-cffi/smbus-python in pure Python"
@@ -580,4 +572,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9"
-content-hash = "372819ea91e2f41826831f25e67fdf47e17acb5068f61e48874860ffba8a3a8f"
+content-hash = "b281a2c8bcacdcd898613c89df07edf49a26e7b69da77b227c212ff314f67780"

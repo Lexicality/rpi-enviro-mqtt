@@ -16,6 +16,7 @@ gmqtt = "^0.6.13"
 pyyaml = "^6.0.1"
 getmac = "^0.9.4"
 typing-extensions = "^4.9.0"
+pms5003 = "<1"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^1.8.0"
