@@ -1,0 +1,7 @@
+.*
+configuration.yaml.example
+assets
+
+README
+pyproject.toml
+poetry.lock
