@@ -1,0 +1,10 @@
+# VSCode defaults
+MD013: false
+# Prettier
+list-marker-space:
+  ul_multi: 3
+  ul_single: 3
+ul-indent:
+  indent: 4
+# The readme uses a bunch of HTML 🤷
+MD033: false
