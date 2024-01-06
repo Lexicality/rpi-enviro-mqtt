@@ -19,7 +19,6 @@ import asyncio
 import logging
 import subprocess
 from typing import Any, Dict, Optional, Tuple
-from typing_extensions import TypedDict
 
 from bme280 import BME280
 from enviroplus import gas
@@ -30,6 +29,7 @@ from pms5003 import (
     ReadTimeoutError as PMS5003ReadTimeoutError,
     SerialTimeoutError as PMS5003SerialTimeoutError,
 )
+from typing_extensions import TypedDict
 
 log = logging.getLogger(__name__)
 
@@ -223,7 +223,7 @@ def _read_pms5003(pms5003: PMS5003, no_retries=False) -> Optional[PMS5003Result]
                 "pl5": pm_values.pm_per_1l_air(5),
                 "pl10": pm_values.pm_per_1l_air(10),
             }
-        except (PMS5003ReadTimeoutError):
+        except PMS5003ReadTimeoutError:
             log.debug("Timed out :(")
             continue
         except (PMS5003SerialTimeoutError, PMS5003ChecksumError):

@@ -25,7 +25,6 @@ import asyncio
 import logging
 import signal
 import sys
-from datetime import timedelta
 from pathlib import PurePosixPath
 from typing import Any, Dict, Optional
 
