@@ -5,3 +5,28 @@ target-version = ['py37']
 profile = 'black'
 float_to_top = true
 combine_as_imports = true
+
+
+[tool.poetry]
+name = "rpi-enviro-mqtt"
+version = "0.1.0"
+description = "Send air quality data from a Pimoroni RPi Enviro+ over MQTT"
+authors = [
+    "Robin Cole <robmarkcole@gmail.com>",
+    "Lexi Robinson <lexi@lexi.org.uk>",
+]
+license = "Apache-2.0"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.9"
+enviroplus = "^0.0.6"
+gmqtt = "^0.6.13"
+pyyaml = "^6.0.1"
+getmac = "^0.9.4"
+typing-extensions = "^4.9.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
