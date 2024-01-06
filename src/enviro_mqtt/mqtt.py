@@ -16,7 +16,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional, cast
+from typing import Any, cast
 
 from gmqtt import Client as MQTTClient
 from typing_extensions import TypedDict
@@ -27,18 +27,22 @@ log = logging.getLogger(__name__)
 class MQTTConf(TypedDict):
     broker: str
     port: int
-    client_id: Optional[str]
+    client_id: str | None
     discovery: bool
     discovery_retain: bool
     discovery_prefix: str
     discovery_device: bool
     discovery_device_name: str
     topic_prefix: str
-    username: Optional[str]
-    password: Optional[str]
+    username: str | None
+    password: str | None
     publish_interval: int
     retain: bool
     qos: int
+
+
+class MQTTConfInput(MQTTConf, total=False):
+    ...
 
 
 DEFAULT_MQTT_CONFIG: MQTTConf = {
@@ -59,18 +63,23 @@ DEFAULT_MQTT_CONFIG: MQTTConf = {
 }
 
 
-def on_connect(client, flags: int, rc: int, properties: dict):
+def on_connect(
+    client: MQTTClient,
+    flags: int,
+    rc: int,
+    properties: dict[Any, Any],  # TODO - I have no idea what's in this dict
+) -> None:
     log.info("Connected with flags %X and rc %X!", flags, rc)
 
 
-def on_disconnect(client, packet: bytes):
+def on_disconnect(client: MQTTClient, packet: bytes) -> None:
     log.warning(
         "Disconnected with packet %s!",
         packet.decode("utf-8", errors="replace"),
     )
 
 
-def setup_mqtt_config(raw_config: dict) -> MQTTConf:
+def setup_mqtt_config(raw_config: MQTTConfInput) -> MQTTConf:
     mqtt_conf = cast(MQTTConf, {**DEFAULT_MQTT_CONFIG, **raw_config})
 
     if not mqtt_conf["broker"]:

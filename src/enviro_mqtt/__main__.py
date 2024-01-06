@@ -26,13 +26,14 @@ import logging
 import signal
 import sys
 from pathlib import PurePosixPath
-from typing import Any, Dict, Optional
+from typing import Any
 
 import gmqtt
 import yaml
 from bme280 import BME280
 from getmac import get_mac_address
 from ltr559 import LTR559
+from typing_extensions import TypeAlias
 
 from .data import (
     DEFAULT_SENSORS,
@@ -53,12 +54,12 @@ log = logging.getLogger(__name__)
 WARMUP_TIME = 10
 
 
-def _load_config() -> dict:
+def _load_config() -> dict[str, Any]:
     with open("configuration.yaml", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+        return yaml.safe_load(f)  # type: ignore
 
 
-def main():
+def main() -> None:
     logging.basicConfig(
         level=logging.INFO,
         # level=logging.DEBUG,
@@ -98,7 +99,7 @@ def main():
 
     main_task = loop.create_task(_main(loop, mqtt_conf, device_serial_number))
 
-    def _stop(*args):
+    def _stop(*args: Any) -> None:
         log.error("Interrupt!")
         if STOP.is_set():
             log.critical("Killed!")
@@ -118,8 +119,8 @@ def main():
 
 
 # It'd probably make my life easier to type these but I'm lazy
-HADiscoveryDevice = Dict[str, Any]
-HADiscoveryPacket = Dict[str, Any]
+HADiscoveryDevice: TypeAlias = dict[str, Any]
+HADiscoveryPacket: TypeAlias = dict[str, Any]
 
 
 def _do_discovery(
@@ -132,7 +133,7 @@ def _do_discovery(
         return
 
     data: HADiscoveryPacket
-    device: Optional[HADiscoveryDevice] = None
+    device: HADiscoveryDevice | None = None
 
     if mqtt_conf["discovery_device"]:
         device = {

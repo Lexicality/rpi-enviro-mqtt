@@ -18,7 +18,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import subprocess
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Optional
 
 from bme280 import BME280
 from enviroplus import gas
@@ -151,7 +151,7 @@ PMS5003_SENSORS = {
 }
 
 
-def setup_sensors() -> Tuple[BME280, LTR559]:
+def setup_sensors() -> tuple[BME280, LTR559]:
     logging.info("Setting up the ADS1015")
     gas.setup()
     gas.read_all()
@@ -166,7 +166,8 @@ def setup_sensors() -> Tuple[BME280, LTR559]:
 
 
 def read_ltr559(ltr559: LTR559) -> float:
-    return round(ltr559.get_lux(), 2)
+    lux: float = ltr559.get_lux()
+    return round(lux, 2)
 
 
 # Get CPU temperature to use for compensation
@@ -207,7 +208,10 @@ def read_gas() -> GasResult:
 _pms5003_data: Optional[PMS5003Result] = None
 
 
-def _read_pms5003(pms5003: PMS5003, no_retries=False) -> Optional[PMS5003Result]:
+def _read_pms5003(
+    pms5003: PMS5003,
+    no_retries: bool = False,
+) -> Optional[PMS5003Result]:
     while True:
         try:
             pm_values = pms5003.read()
@@ -240,7 +244,7 @@ async def _run_pms5003(loop: asyncio.AbstractEventLoop, pms5003: PMS5003) -> Non
         _pms5003_data = await loop.run_in_executor(None, _read_pms5003, pms5003, True)
 
 
-async def setup_pms5003(loop: asyncio.AbstractEventLoop) -> Optional[asyncio.Task]:
+async def setup_pms5003(loop: asyncio.AbstractEventLoop) -> asyncio.Task[None] | None:
     pms5003 = await loop.run_in_executor(None, lambda: PMS5003())
     global _pms5003_data
     _pms5003_data = await loop.run_in_executor(None, _read_pms5003, pms5003, True)
@@ -274,8 +278,8 @@ def check_wifi() -> bool:
     return bool(subprocess.check_output(["hostname", "-I"]))
 
 
-def get_current_data(ltr559: LTR559, bme280: BME280) -> dict:
-    data: Dict[str, Any] = {
+def get_current_data(ltr559: LTR559, bme280: BME280) -> dict[str, Any]:
+    data: dict[str, Any] = {
         **read_bme280(bme280),
         **read_gas(),
         "lux": read_ltr559(ltr559),
