@@ -254,7 +254,6 @@ async def _main_loop(
     while True:
         try:
             values = get_current_data(ltr559, bme280)
-            print(values)
             mqtt_client.publish(
                 topic,
                 values,
