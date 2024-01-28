@@ -111,7 +111,7 @@ def main() -> None:
 
     try:
         loop.run_until_complete(main_task)
-    except asyncio.CancelledError:
+    except (asyncio.CancelledError, asyncio.TimeoutError):
         pass
 
     loop.stop()
@@ -218,7 +218,7 @@ async def _main(
         try:
             mqtt_client = await asyncio.wait_for(client_t, timeout=10)
         except asyncio.TimeoutError:
-            client_t.cancel()
+            log.exception("Timed out waiting for the MQTT client to connect")
             raise
 
     _do_discovery(mqtt_conf, mqtt_client, serial, pms5003_t is not None)
@@ -237,7 +237,10 @@ async def _main(
     except asyncio.CancelledError:
         if pms5003_t:
             pms5003_t.cancel()
-        await asyncio.wait([mqtt_client.disconnect()], timeout=2)
+        try:
+            await asyncio.wait_for(mqtt_client.disconnect(), timeout=2)
+        except asyncio.TimeoutError:
+            log.error("Timed out trying to disconnect")
 
 
 async def _main_loop(
