@@ -523,17 +523,16 @@ files = [
 
 [[package]]
 name = "st7735"
-version = "1.0.0"
+version = "0.0.5"
 description = "Library to control an ST7735 168x80 TFT LCD display."
 optional = false
-python-versions = ">=3.7"
+python-versions = "*"
 files = [
-    {file = "st7735-1.0.0-py3-none-any.whl", hash = "sha256:20eb580e3d2462d8498ea5922cb5c1128abc46cbbc91998f07911054b3594f83"},
-    {file = "st7735-1.0.0.tar.gz", hash = "sha256:401dee9c1e1bcdf18df9a205876788d726bb170491e6cd6f8bc8a6ab16801e18"},
+    {file = "ST7735-0.0.5-py3-none-any.whl", hash = "sha256:d801b598e07cbfeb259c9184266fcdbbddbd1d3dd02b9b7b00fe7a07d811f1f7"},
+    {file = "ST7735-0.0.5.tar.gz", hash = "sha256:7a06c281b03729fdbb2becc1e9d591e2711ef1e9a631ecdd109c5493f465f354"},
 ]
 
 [package.dependencies]
-numpy = "*"
 spidev = ">=3.4"
 
 [[package]]
@@ -572,4 +571,4 @@ files = [
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9"
-content-hash = "b281a2c8bcacdcd898613c89df07edf49a26e7b69da77b227c212ff314f67780"
+content-hash = "4dab2ae1d4e99c5c32e874a9c6333fde97e60a682ef7d0756ef1a140d0b4eefb"
